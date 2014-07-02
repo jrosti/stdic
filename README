@@ -1,0 +1,366 @@
+
+************************************************************************************************
+
+README
+									
+Digital image correlation (DIC) program
+
+***************************************************************************************************
+
+Installation:
+
+  Dependancies:
+				
+    Program requires installation of Python 2.4 or Python 2.6. Development packages are
+    needed as Python.h must be present. In addition NumPy must be installed (version 
+    needed unknown, latest recommended).
+				
+    The python packages PIL and numpy are required.
+		
+  Compiling:
+		
+    To compile the program run
+		
+      make
+
+Running:
+  
+  From command line type:
+  
+    python register.py $picture_folder $dff_folder $configuration_file
+
+  where $picture_folder is the folder containing pictures, $dff_folder is
+  the output folder and $configuration_file is the file containing 
+  configuration.
+
+Configuring:
+
+  Example configuration is in register.conf. The idea is as follows.
+  
+  1. edit the input and output variables (imageFormat.X and output.X)
+  2. create a sequence with "sequence.X" variables
+  3. create pairs with "pairiterator.X" variables
+  4. define deformation convergense criterias with "dic.X" variables
+  
+  imageformat:
+    
+    Algorithm needs to parse the image number in order to make the
+    sequences. Thus, <picturenumber> tag is mandatory.
+    
+    Regexp:
+      <Kuva-<picturenumber>.<ignore>-<TimeStamp>.png>
+    would, with picture 
+	  Kuva-281109.img-128991.png, 
+	match the expression and find keys: 
+	  {PictureNumber:281109, TimeStamp:128991}.
+	    					
+	And with picture 
+	  Kuva-212111.img-crop-128761.png,
+	it would find keys:
+	  {PictureNumber:212111, TimeStamp:128761}
+
+  output:
+    
+    output.format = "dff-%s-%s.dff"
+      naming convention for the output files. First and second %s
+      are the image numbers of first and second images. 
+      
+    output.name = "DffExporter"
+      name of the output file writer method.
+      
+    output.step = 10
+      Functions are evaluated in a grid. This is the grid spacing.
+
+  sequence:
+  
+   sequence.name = "Linear"
+     Name of the method creating the sequence.
+   
+   sequence.start = 0
+     Index of the first picture in sorted picturelist (order is 
+     <picturenumber>).
+     
+   sequence.skip = 1
+     number to add to the next picture in order to get to the second.
+     
+   sequence.end = 10
+     length of the sequence is end-1. (from N pictures you get N-1 pairs) 
+     
+  pairiterator:
+  
+    pairiterator.name = "Previous"
+      Name of the method forming pairs. In this case the reference picture
+      is the previous image in the sequence. Alternative is "First", which
+      means that the comparison is always done to the first picture in the
+      sequence.
+       
+  dic:
+    
+    convergence variables. We recommend studying the source code to see how
+    these work.
+    
+
+******************************************************************************    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+Testing:
+		
+    Tests on the program can be run by running testsuite.py at program directory. If all
+    tests are passed, the program is usable.
+			
+  Commands:
+
+    python run_testsuite.py
+				
+    Accuracy tests:
+	
+      The accuracy tests with custom transformations can be run by running
+      test_transformsuite.py at program directory. That writes errorarray{number 01-05}.txt
+      at directories {program directory}/test_transforms/test_at and 
+      {program directory}/test_transforms/test_poly. These arrays can be viewed by matlab by
+      running script showerror.m at the previous directories. The transformations can be
+      recreated by scripts makeat.m and makepoly.m at the same directories.
+			
+      Commands:
+        at {program directory}:
+          python run_transformsuite.py
+					
+        at matlab with directory {program directory}/test_transforms/test_at or
+        {program directory}/test_transforms/test_poly:
+          showerror
+					
+       Optional:
+         at matlab with directory {program directory}/test_transforms/test_at or
+         {program directory}/test_transforms/test_poly:
+           
+           makeat
+         or
+           makepoly
+						
+					
+*******************************************************************************
+* Previous README starts here, use adaptive reading	
+*******************************************************************************
+	
+	Configuration:
+		
+		Most of the program's configuration is given at a configuration file. A sample
+		configuration dicconf.dicconf is at program directory. The program has been written
+		at two parts which both use the same configuration file but with their own configuration
+		options.
+	
+	Configuration syntax:
+			
+		[file.py]		Determines the paragraph. Every variables defined by lines after this 
+					are given to the appropriate part of the program determined by it's 
+					filename. [all] gives all files an access to those variables.
+							
+		# comment		'#' Determines a commented line, that will be skipped, when the
+					configuration is read. If '#' is at a line, the end of the line
+					is removed.
+							
+				WARNING: If '#' is present inside a string, then the program will
+					think it's there to define a comment and will remove the end of the
+					string, thus breaking the configuration. This problem has not yet
+					been repaired and strings with '#' are not recommended.
+								
+		key = value		All values are given as key-value pairs with '=' separating them. 
+					The first '=' at a line determines the value after that, so a string
+					can include '='.
+								
+						Common usage:	All except paragraphs and comments.
+	
+		Value types:
+			
+			"string"		Program will read the value in as a string.
+				
+			75			Program will read the value in as an integer.
+				
+			75.0			Program will read the value in as a float.
+	
+	            (3, 14)
+	            or				Program will read the value in as a tuple with type integer or float.
+	            (3.14, 1.0)
+	            
+	            <<key1> <key2>>		Program will read the line as a regular expression. Syntax below.
+	            
+	            
+	            Regular expression syntax:
+	            
+	                primary < >		Defines that the string inside < > is a regular expression.
+	            
+	    		secondary < >		Defines that there exists a series of letters, and a key for them
+	    							is a string between < >.
+	    						
+	    			<ignore>		Defines that there exists a series of letters, but a key for them
+	    							will not be written.
+	    							
+	    			Different keys must be separated with a letter or a series of letters, so that
+	    			the programs knows the differences between keys. This syntax is used when
+	    			determining the filename syntax of the pictures to be analyzed.
+	    			
+	    				Example:
+	    					
+	    					Regular expression 
+	    						Kuva-<PictureNumber>.<ignore>-<TimeStamp>.png
+	    					would, with picture 
+	    						Kuva-281109.img-128991.png, 
+	    					match the expression and find keys: 
+	    						{PictureNumber:281109, TimeStamp:128991}.
+	    					And with picture 
+	    						Kuva-212111.img-crop-128761.png,
+	    					it would find keys:
+	    						{PictureNumber:212111, TimeStamp:128761}
+	
+	
+	Values used by the program:
+	
+    [register.py]
+			
+    REQUIRED:
+			
+	  sequence.name = 
+						
+      Analyze = "True or False"
+					Determines if the program will analyze the pictures. Default False
+	
+			AnalyzeTo = "First, Previous or Picture filename"
+					Determines which picture the program will use as a comparison picture
+					during the analysis. First is the first picture in the picture list (see
+					FirstPicture at optional commands), Previous is the previoust picture in
+					the picture list and Picture Filename is a user defined picture with that
+					filename.
+							
+					NOTICE:	If the user gives a filename to AnalyzeTo, it must be the first
+					picture in picturelist. So if the user gives a FirstPicture (see
+					below) which is before the referencepicture, then the reference-
+					picture will effectively be the FirstPicture and the AnalyzeTo
+									will be effectively First.
+								
+				Example:
+									
+					Folder consists of pictures from img00.tiff to img99.tiff.
+					AnalyzeTo is img50.tiff and FirstPicture is img10.tiff. The
+					program will analyze pictures from img51.tiff to img99.tiff and
+					compare them to img50.tiff.
+									
+			OverwriteDffs = "True or False"
+					Determines whether the program will run the analysis again when it finds 
+					a dff-file that contains analysis of pictures currently to be analyzed. 
+					If True, it	will do the analysis again and overwrite the previous dff-file.
+							
+			DffStep = integer
+					Determines the stepsize, at which the program will write the output of the dff.
+							
+			PictureForm = <regular expression containing field <PictureNumber>>
+					Determines the filename of the pictures. Key PictureNumber must be present,
+					other keys can be inserted with the syntax of regular expressions given
+					above. Other keys and their corresponding values will be written into the dff.
+						
+							
+		OPTIONAL:
+				
+			FirstPicture = "Picture filename"
+					Determines the first picture the program will analyze AnalyzeTo against.
+					If AnalyzeTo is First, this picture will be the referencepicture.
+							
+				Example:
+							
+					Folder consists of pictures from img00.tiff to img99.tiff.
+					AnalyzeTo is img00.tiff and FirstPicture is img10.tiff. The
+					program will analyze pictures from img10.tiff to img99.tiff and
+					compare them to img00.tiff.
+
+			LastPicture = "Picture filename"
+					Determines the last picture the program will analyze AnalyzeTo against.
+							
+					NOTICE:	If the user gives LastPicture, that is before FirstPicture or
+						AnalyzeTo picture filename, the picturelist will be empty and
+						no analysis will be done.
+									
+			PictureSkip = integer
+					If PictureSkip is not 0 or 1, the program takes every PictureSkip:th
+					picture. FirstPicture and LastPicture are always included.
+							
+			AnalyzesMax = integer
+					Defines a limit to the number of analyses the program will do. If it's
+					not reached, it's not triggered.s
+									
+			Verbose = integer
+					Determines the amount of feedback with range from 0 to 5. Default is 3.
+							
+			WriteCoefs = "True or False"
+					If this is set to True, the program will write, in addition to the dffs, the
+					coefficients of the spline functions as NumPy.npy arrays. They can be loaded
+					back with NumPy's functions.
+						
+				
+	[deformdata.py]
+				
+		REQUIRED:
+					
+			Crop = "True or False"
+					Determines whether the whole image is analyzed or only a part of it.
+							
+				NOTICE:	If Crop is True, then CropXStart, CropXEnd, CropYStart and CropYEnd
+					must be defined also.
+							
+			CrateTuple = (integer, integer)
+					Defines the maximum knot spacing the program will use with multiresolution
+					analysis. Recommended values 16, 20 or 32.
+							
+			Verbose	= integer
+					Defines the amount of feedback with 0 for no feedback.
+							
+			Xtol = float
+					Defines the stopping condition SSD per pixel. A value less than 0.01 recommended.
+							
+			DegF = integer
+					Defines the degree of warping function. Degree 3 recommended.
+							
+			DegC = integer
+					Defines the degree of splines used for interpolation. Degree 3 recommended.
+							
+							
+			OPTIONAL:
+			
+				CropXStart	= integer
+				CropXEnd	= integer
+				CropYStart	= integer
+				CropYEnd	= integer
+	
+					Determines the location and size of the crop used.
+							
+					
+***************************************************************************************************
+
+
+	Running:
+		
+		The program is run from the command line by giving it picture folder, dff folder and 
+		configuration file as arguments. From Python script it is run by creating a CreepExperiment
+		instance with the same arguments.
+			
+		Commands:
+			
+			Console:
+				
+				python register.py {picture folder} {dff folder} {configuration file}
+					
+			Script:
+					
+				import stdic
+				stdic.CreepExperiment({picture folder}, {dff folder}, {configuration file})
+					
+					
+					
+	
